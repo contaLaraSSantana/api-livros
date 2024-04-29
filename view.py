@@ -60,15 +60,60 @@ def login():
 
 @app.route('/protected', methods=['GET'])
 def protected():
-    # Verifica se o usuário está autenticado verificando se o email está na sessão
     if 'id_usuario' in session:
         return jsonify({'mensagem': 'Rota Protegida'})
     else:
-        # Se o usuário não estiver autenticado, retorna uma mensagem de erro
         return jsonify({'mensagem': 'Requer Autorização'})
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    # Remove o email da sessão, efetivamente fazendo logout
     session.pop('id_usuario', None)
     return jsonify({'mensagem': 'Logout bem Sucedido'})
+
+
+# rota para editar
+
+@app.route('/livro/<int:id_livro>', methods=['PUT'])
+def put_livro(id_livro):
+    if 'id_usuario' in session:
+        livro = Livro.query.get(id_livro)
+
+        if livro:
+            data = request.json
+            livro.titulo = data.get('titulo', livro.titulo)
+            livro.autor = data.get('autor', livro.autor)
+            livro.ano_publicacao = data.get('ano_publicacao', livro.ano_publicacao)
+
+            # Salva as mudanças no banco de dados
+            db.session.commit()
+
+            return jsonify(
+                mensagem='Livro atualizado com sucesso',
+                livro={
+                    'id_livro': livro.id_livro,
+                    'titulo': livro.titulo,
+                    'autor': livro.autor,
+                    'ano_publicacao': livro.ano_publicacao
+                }
+            )
+
+        else:
+            return jsonify({'mensagem': 'Livro não encontrado'})
+    else:
+        return jsonify({'mensagem': 'Requer Autorização'})
+
+
+@app.route('/livro/<int:id_livro>', methods=['DELETE'])
+def delete_livro(id_livro):
+    if 'id_usuario' in session:
+        livro = Livro.query.get(id_livro)
+
+        if livro:
+            db.session.delete(livro)
+            db.session.commit()
+
+            return jsonify({'mensagem': 'Livro excluído com sucesso'})
+        else:
+            return jsonify({'mensagem': 'Livro não encontrado'})
+    else:
+        return jsonify({'mensagem': 'Requer Autorização'})
